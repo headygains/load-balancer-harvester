@@ -152,9 +152,15 @@ func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.P
 
 	var network string
 	if lb.Spec.WorkloadType == lbv1.Cluster && lb.Annotations != nil && lb.Annotations[utils.AnnotationKeyCluster] != "" {
-		network, err = m.findNetwork(lb.Namespace, lb.Annotations[utils.AnnotationKeyCluster])
-		if err != nil {
-			return nil, err
+		// Respect user-specified network annotation if present;
+		// only auto-detect from VM NICs when not explicitly set.
+		if existing, ok := lb.Annotations[utils.AnnotationKeyNetwork]; ok && existing != "" {
+			network = existing
+		} else {
+			   network, err = m.findNetwork(lb.Namespace, lb.Annotations[utils.AnnotationKeyCluster])
+			   if err != nil {
+					   return nil, err
+			   }
 		}
 	}
 
